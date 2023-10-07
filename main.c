@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 
 #define clearScreen() printf("\033[2J")
 #define setPosition(x, y) printf("\033[%d;%dH",(y),(x))
@@ -13,15 +14,43 @@
 #define CYAN 6
 #define WHITE 7
 #define DEFAULT 9
+#define setAttribute(n) printf("\033[%dm", (n))
+#define NORMAL 0
+#define BLIGHT 1
+#define DIM 2
+#define UNDERBAR 4
+#define BLINK 5
+#define REVERSE 7
+#define HIDE 8
+#define STRIKE 9
 
-int main()
-{
+int wait(int msec);
+
+int main() {
+    int y;
     clearScreen();
-    setBackColor(WHITE);
-    setCharColor(BLACK);
-    setPosition(1, 1);
-    printf("Hello, World!\n");
-    fflush(stdout);
+    for (y=1; y<23; y++) {
+        // セルを表示
+        setPosition(5, y);
+        setCharColor(WHITE);
+        setBackColor(BLACK);
+        setAttribute(REVERSE);
+        printf("  ");
+        fflush(stdout);
+        wait(500); // 500msec待つ
+        setPosition(5, y);
+        setCharColor(WHITE);
+        setBackColor(BLACK);
+        setAttribute(NORMAL);
+        printf("  ");
+        fflush(stdout);
+    }
     setBackColor(DEFAULT);
     setCharColor(DEFAULT);
+    clearScreen();
+}
+
+int wait(int msec) {
+    struct timespec r = {0, msec * 1000L * 1000L};
+    return nanosleep(&r, NULL);
 }
