@@ -247,17 +247,20 @@ static void onsignal(int sig) { // 内部利用のシグナルハンドラ
 }
 
 int tinit(void) {
-    setbuf(stdout, NULL);
-    if (tcgetattr(STDIN_FILENO, &otty) < 0)
+    if (tcgetattr(1, &otty) < 0)
         return -1;
     ntty = otty;
-    ntty.c_iflag &= ~(INLCR|ICRNL|IXON|ISTRIP|BRKINT);
+    // 入力フラグを設定
+    ntty.c_iflag &= ~(INLCR|ICRNL|IXON|IXOFF|ISTRIP);
+    // 出力フラグを設定
     ntty.c_oflag &= ~OPOST;
-    ntty.c_lflag &= ~(ICANON|ECHO|ECHONL|IEXTEN);
+    // ローカルフラグを設定
+    ntty.c_lflag &= ~(ICANON|ECHO);
+    // 入力も最小文字数を1に
     ntty.c_cc[VMIN] = 1;
+    // 入力待ちの時間を指定
     ntty.c_cc[VTIME] = 0;
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &ntty) < 0)
-        return -1;
+    tcsetattr(1, TCSADRAIN, &ntty);
     signal(SIGINT, onsignal);
     signal(SIGQUIT, onsignal);
     signal(SIGTERM, onsignal);
