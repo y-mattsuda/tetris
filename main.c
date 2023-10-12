@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <errno.h>
 #include <signal.h>
 #include <termios.h>
@@ -191,22 +190,66 @@ int printBlock(Cell block[BLOCK_SIZE][BLOCK_SIZE], int x, int y);
 int clearBlock(Cell block[BLOCK_SIZE][BLOCK_SIZE], int x, int y);
 
 int main() {
-//    Cell block[BLOCK_SIZE][BLOCK_SIZE];
-//    copyBlock(block_type[1], block);
-//    initialize();
-//    for (int y=0; y<HEIGHT-BLOCK_SIZE; y++) {
-//        printBlock(block, 5, y);
-//        waitMsec(500);
-//        clearBlock(block, 5, y);
-//    }
-//    reset();
-    int c;
+    int x, y, c, prex, prey;
+    Cell block[BLOCK_SIZE][BLOCK_SIZE];
+    struct timeval start_time, now_time, pre_time;
+    double duration, thold;
+
+    copyBlock(block_type[1], block);
     initialize();
-    for (int count = 0; count < 10; ) {
-        if (kbhit() != 0) {
-            c = getch();
-            printf("%x", c);
-            count++;
+    x = 5;
+    y = 0;
+    thold = 0.7; // 落下の時間感覚
+    printBlock(block, x, y);
+    gettimeofday(&start_time, NULL); // 開始時刻
+    pre_time = start_time;
+    for (y = 0; y < HEIGHT; ) {
+        prex = x;
+        prey = y;
+
+        if (kbhit()) {
+            clearBlock(block, x, y);
+            c = getch(); // 1回目
+            if (c == 0x1b) {
+                c = getch(); // 2回目
+                if (c == 0x5b) {
+                    c = getch(); // 3回目
+                    switch (c) {
+                        case 0x41: // UP
+                            break;
+                        case 0x42: // DOWN
+                            break;
+                        case 0x43: // RIGHT
+                            x++;
+                            break;
+                        case 0x44: // LEFT
+                            x--;
+                            break;
+                        default:
+                            exit(1);
+                    }
+                }
+            }
+            else { // 矢印キー以外の場合
+                reset();
+                exit(1);
+            }
+        }
+        gettimeofday(&now_time, NULL);
+        // 前回からの経過時間
+        duration = now_time.tv_sec - pre_time.tv_sec
+                + (now_time.tv_usec - pre_time.tv_usec) / 1000000.0;
+        // もし落下時間間隔以上に時間経過していたら
+        if (duration > thold) {
+            pre_time = now_time;
+            y++; // 自動的に1つ落下
+        }
+        // もしブロックが左右移動/落下していたら
+        if (prex != x || prey != y) {
+            // 全開位置のブロックを消去
+            clearBlock(block, prex, prey);
+            // 新しい場所に描画
+            printBlock(block, x, y);
         }
     }
     reset();
